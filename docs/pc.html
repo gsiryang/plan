@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>6-Month Plan Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/pc.js"></script>
+</head>
+<body class="pc-page">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Survive · Grow · Prepare · Transition</p>
+      <h1>6-Month Plan</h1>
+      <p class="subhead">把原来的大表拆成可总览、可执行、可复盘的数字计划。</p>
+    </div>
+    <nav class="nav-actions">
+      <a href="/mobile">手机执行页</a>
+      <a href="/pwa.html">iPhone 离线版</a>
+      <a href="#today">今日打卡</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="why-band">
+      <strong>My Why</strong>
+      <span>I'm building my future intentionally so I can have a career I love and a life I'm proud of.</span>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>六个月路线图</h2>
+        <span>每周看一次，用来校准方向</span>
+      </div>
+      <div id="months" class="month-grid"></div>
+    </section>
+
+    <section class="split">
+      <article>
+        <div class="section-title compact">
+          <h2>每日底线</h2>
+          <span>每天只看这一组</span>
+        </div>
+        <ul id="nonNegotiables" class="check-list"></ul>
+      </article>
+      <article>
+        <div class="section-title compact">
+          <h2>周复盘</h2>
+          <span>周末 10 分钟</span>
+        </div>
+        <ul id="weeklyCheckin" class="question-list"></ul>
+      </article>
+      <article>
+        <div class="section-title compact">
+          <h2>反思提示</h2>
+          <span>卡住时任选一个</span>
+        </div>
+        <ul id="reflectionPrompts" class="question-list"></ul>
+      </article>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Weekly Visual Calendar</h2>
+        <span>PC 端适合做周规划和调整</span>
+      </div>
+      <div id="weekGrid" class="week-grid"></div>
+    </section>
+
+    <section id="today" class="today-panel">
+      <div>
+        <p class="eyebrow">Daily Action</p>
+        <h2>今天只推进 4 个勾选项</h2>
+      </div>
+      <form id="checkinForm" class="checkin-form">
+        <label>日期<input id="entryDate" type="date"></label>
+        <label>本周焦点<input id="weekFocus" placeholder="例如：完成项目练习 + 稳定工作节奏"></label>
+        <label>今天最重要的一件事<input id="topOne" placeholder="只写一件"></label>
+        <div class="toggle-row">
+          <label><input id="workDone" type="checkbox"> 工作稳定</label>
+          <label><input id="skillDone" type="checkbox"> 技能成长</label>
+          <label><input id="careerDone" type="checkbox"> 职业准备</label>
+          <label><input id="wellbeingDone" type="checkbox"> 能量维护</label>
+        </div>
+        <label>一句复盘<textarea id="reflection" rows="3" placeholder="今天发生了什么？明天怎么更轻一点？"></textarea></label>
+        <button type="submit">保存今日记录</button>
+        <p id="saveState" class="save-state"></p>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

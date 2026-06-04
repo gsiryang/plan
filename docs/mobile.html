@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>今日计划</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script defer src="/mobile.js"></script>
+</head>
+<body class="mobile-page">
+  <main class="phone-shell">
+    <header class="mobile-hero">
+      <p class="eyebrow">Today</p>
+      <h1>今天只做最小闭环</h1>
+      <p>工作稳定 + 一个成长动作 + 一个职业动作 + 一个恢复动作。</p>
+    </header>
+
+    <form id="mobileForm" class="mobile-card">
+      <label>日期<input id="entryDate" type="date"></label>
+      <label>本周焦点<input id="weekFocus" placeholder="这周主要推进什么？"></label>
+      <label>今天最重要的一件事<input id="topOne" placeholder="只写一件"></label>
+
+      <div class="mobile-toggles">
+        <label><input id="workDone" type="checkbox"><span>工作稳定</span></label>
+        <label><input id="skillDone" type="checkbox"><span>技能成长</span></label>
+        <label><input id="careerDone" type="checkbox"><span>职业准备</span></label>
+        <label><input id="wellbeingDone" type="checkbox"><span>能量维护</span></label>
+      </div>
+
+      <label>一句复盘<textarea id="reflection" rows="4" placeholder="今天最值得记的一句话"></textarea></label>
+      <button type="submit">保存</button>
+      <p id="saveState" class="save-state"></p>
+    </form>
+
+    <section class="mobile-card">
+      <div class="section-title compact">
+        <h2>今日建议</h2>
+      </div>
+      <div id="todaySuggestions" class="suggestions"></div>
+    </section>
+
+    <footer class="mobile-footer">
+      <a href="/pc">打开 PC 总览</a>
+    </footer>
+  </main>
+</body>
+</html>
