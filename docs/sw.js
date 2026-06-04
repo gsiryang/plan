@@ -1,11 +1,12 @@
-const CACHE_NAME = "personal-plan-pwa-v13";
+const CACHE_NAME = "personal-plan-pwa-v14";
 const ASSETS = [
-  "/pwa.html",
-  "/styles.css?v=13",
-  "/pwa.js?v=13",
-  "/manifest.webmanifest",
-  "/icons/icon-180.png",
-  "/icons/icon-512.png",
+  "index.html",
+  "pwa.html",
+  "styles.css?v=14",
+  "pwa.js?v=14",
+  "manifest.webmanifest",
+  "icons/icon-180.png",
+  "icons/icon-512.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -28,7 +29,7 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   event.respondWith(
     caches.match(event.request).then((cached) =>
-      cached || fetch(event.request).catch(() => caches.match("/pwa.html"))
+      cached || fetch(event.request).catch(() => caches.match("pwa.html"))
     )
   );
 });

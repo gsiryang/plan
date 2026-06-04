@@ -1,19 +1,19 @@
 {
   "name": "今日计划",
   "short_name": "今日计划",
-  "start_url": "/pwa.html",
+  "start_url": "pwa.html",
   "display": "standalone",
   "background_color": "#edf4fb",
   "theme_color": "#071d3a",
   "icons": [
     {
-      "src": "/icons/icon-180.png",
+      "src": "icons/icon-180.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
