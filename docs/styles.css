@@ -317,6 +317,13 @@ button {
   cursor: pointer;
 }
 
+.small-action {
+  padding: 8px 10px;
+  background: #153e38;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .save-state {
   min-height: 22px;
   margin: 0;
@@ -384,6 +391,31 @@ button {
 .mobile-card {
   margin-bottom: 12px;
   padding: 16px;
+}
+
+.compact-card {
+  padding: 12px;
+}
+
+.compact-settings {
+  display: grid;
+  grid-template-columns: .8fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.compact-settings label {
+  gap: 5px;
+  font-size: 13px;
+}
+
+.compact-settings input {
+  padding: 9px 10px;
+}
+
+.compact-settings button {
+  min-height: 40px;
+  padding: 9px 12px;
 }
 
 .mobile-toggles {
@@ -603,6 +635,90 @@ button {
   margin: 0;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.summary-grid div,
+.summary-tile {
+  display: grid;
+  gap: 3px;
+  padding: 11px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
+  color: var(--ink);
+  text-align: left;
+}
+
+.summary-grid strong,
+.summary-tile strong {
+  color: var(--green);
+  font-size: 16px;
+}
+
+.summary-grid span,
+.summary-tile span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.summary-tile {
+  width: 100%;
+  cursor: pointer;
+}
+
+.ledger-entry > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ledger-entry button {
+  padding: 6px 9px;
+  background: #647087;
+  font-size: 12px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(7, 29, 58, .38);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal-panel {
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.modal-actions button:last-child {
+  background: #647087;
 }
 
 .chart-wrap {
@@ -856,6 +972,14 @@ button {
 
   .two-col {
     grid-template-columns: 1fr;
+  }
+
+  .compact-settings {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .compact-settings button {
+    grid-column: 1 / -1;
   }
 
   .week-grid {

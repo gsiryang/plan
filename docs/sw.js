@@ -1,9 +1,9 @@
-const CACHE_NAME = "personal-plan-pwa-v14";
+const CACHE_NAME = "personal-plan-pwa-v17";
 const ASSETS = [
   "index.html",
   "pwa.html",
-  "styles.css?v=14",
-  "pwa.js?v=14",
+  "styles.css?v=17",
+  "pwa.js?v=17",
   "manifest.webmanifest",
   "icons/icon-180.png",
   "icons/icon-512.png",

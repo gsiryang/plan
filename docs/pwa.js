@@ -42,6 +42,7 @@ const PROMPTS = [
 ];
 
 const DEFAULT_PLAN_ID = "default-career-transition";
+const DEFAULT_LEDGER_CATEGORIES = ["三餐", "饮品", "服饰", "工资"];
 const DEFAULT_PLAN = {
   id: DEFAULT_PLAN_ID,
   name: "6-Month Career Transition Plan",
@@ -128,7 +129,15 @@ function blankCheckin(entryDate) {
 
 function normalizeStore(raw) {
   if (!raw) {
-    return { version: 4, entries: {}, custom_tasks: [], errands: [], plans: [DEFAULT_PLAN], active_plan_id: DEFAULT_PLAN_ID };
+    return {
+      version: 4,
+      entries: {},
+      custom_tasks: [],
+      errands: [],
+      plans: [DEFAULT_PLAN],
+      active_plan_id: DEFAULT_PLAN_ID,
+      ledger: { close_day: 1, categories: DEFAULT_LEDGER_CATEGORIES, transactions: [], balances: {} },
+    };
   }
   const entries = raw.entries || raw.checkins || raw;
   const plans = Array.isArray(raw.plans) && raw.plans.length ? raw.plans : [DEFAULT_PLAN];
@@ -148,6 +157,19 @@ function normalizeStore(raw) {
     errands: raw.errands || [],
     plans,
     active_plan_id: activePlanId,
+    ledger: normalizeLedger(raw.ledger),
+  };
+}
+
+function normalizeLedger(rawLedger) {
+  const source = rawLedger || {};
+  const categories = Array.isArray(source.categories) ? source.categories : [];
+  const closeDay = Math.max(1, Math.min(31, Number(source.close_day) || 1));
+  return {
+    close_day: closeDay,
+    categories: [...new Set([...DEFAULT_LEDGER_CATEGORIES, ...categories].filter(Boolean))],
+    transactions: Array.isArray(source.transactions) ? source.transactions : [],
+    balances: source.balances || {},
   };
 }
 
@@ -209,6 +231,7 @@ function writeStore(store) {
   if (!store.errands) store.errands = [];
   if (!store.plans || !store.plans.length) store.plans = [DEFAULT_PLAN];
   if (!store.active_plan_id) store.active_plan_id = store.plans[0].id || DEFAULT_PLAN_ID;
+  store.ledger = normalizeLedger(store.ledger);
   store.version = 4;
   localStorage.setItem(PLAN_KEY, JSON.stringify(store));
 }
@@ -504,7 +527,13 @@ function renderPlanViews(entryDate) {
       <details><summary>查看整周</summary><ul>${days.map((day, index) => `<li>${DAY_NAMES[index]}：${day}</li>`).join("")}</ul></details>
     </article>
   `).join("");
-  $("#todayPlan").innerHTML = weekTemplate.map(({ category, days }) => `<div class="suggestion"><strong>${category}</strong><span>${days[weekday]}</span></div>`).join("");
+  const store = readStore();
+  const customTasks = (store.custom_tasks || []).filter((task) => !task.done);
+  const planItems = weekTemplate.map(({ category, days }) => `<div class="suggestion"><strong>${category}</strong><span>${days[weekday]}</span></div>`);
+  if (customTasks.length) {
+    planItems.push(...customTasks.map((task) => `<div class="suggestion custom-suggestion"><strong>自定义计划</strong><span>${task.text}</span></div>`));
+  }
+  $("#todayPlan").innerHTML = planItems.join("");
   $("#promptList").innerHTML = prompts.map((prompt) => `<div class="prompt-item">${prompt}</div>`).join("");
   renderCustomTasks();
   renderErrands(entryDate);
@@ -588,6 +617,7 @@ function addCustomTask() {
   writeStore(store);
   $("#customTaskText").value = "";
   renderCustomTasks();
+  renderPlanViews($("#entryDate").value || todayIso());
 }
 
 function completeCustomTask(id) {
@@ -597,6 +627,264 @@ function completeCustomTask(id) {
   );
   writeStore(store);
   renderCustomTasks();
+  renderPlanViews($("#entryDate").value || todayIso());
+}
+
+function daysInMonth(year, monthIndex) {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+function dateWithCloseDay(year, monthIndex, closeDay) {
+  const day = Math.min(closeDay, daysInMonth(year, monthIndex));
+  return new Date(year, monthIndex, day);
+}
+
+function ledgerPeriodFor(value, closeDay) {
+  const selected = parseDate(value || todayIso());
+  let start = dateWithCloseDay(selected.getFullYear(), selected.getMonth(), closeDay);
+  if (selected < start) start = dateWithCloseDay(selected.getFullYear(), selected.getMonth() - 1, closeDay);
+  const nextStart = dateWithCloseDay(start.getFullYear(), start.getMonth() + 1, closeDay);
+  const end = new Date(nextStart);
+  end.setDate(end.getDate() - 1);
+  return {
+    key: toIso(start).slice(0, 7),
+    start: toIso(start),
+    end: toIso(end),
+  };
+}
+
+function moneyText(value) {
+  return `¥${Number(value || 0).toFixed(2)}`;
+}
+
+function ledgerPeriod() {
+  const store = readStore();
+  return ledgerPeriodFor($("#ledgerDate").value || todayIso(), store.ledger.close_day);
+}
+
+function renderLedgerCategoryOptions() {
+  const store = readStore();
+  $("#ledgerCategory").innerHTML = store.ledger.categories
+    .map((category) => `<option value="${category}">${category}</option>`)
+    .join("");
+}
+
+function setupLedger() {
+  const store = readStore();
+  $("#ledgerCloseDay").value = store.ledger.close_day || 1;
+  $("#ledgerDate").value = $("#ledgerDate").value || todayIso();
+  $("#ledgerEntryDate").value = $("#ledgerEntryDate").value || todayIso();
+  renderLedgerCategoryOptions();
+  renderLedger();
+}
+
+function renderLedger() {
+  const store = readStore();
+  const period = ledgerPeriod();
+  const entries = (store.ledger.transactions || [])
+    .filter((item) => item.date >= period.start && item.date <= period.end)
+    .sort((a, b) => `${b.date} ${b.created_at || ""}`.localeCompare(`${a.date} ${a.created_at || ""}`));
+  const income = entries.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const expense = entries.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const balance = store.ledger.balances[period.key];
+  $("#ledgerPeriod").textContent = `当前账期：${period.start} 至 ${period.end}`;
+  $("#ledgerBalance").value = balance != null ? balance : "";
+  $("#ledgerSummary").innerHTML = `
+    <div><strong>${moneyText(income)}</strong><span>收入</span></div>
+    <div><strong>${moneyText(expense)}</strong><span>支出</span></div>
+    <button class="summary-tile" type="button" id="openBalanceModal"><strong>${balance != null && balance !== "" ? moneyText(balance) : "-"}</strong><span>手动余额</span></button>
+  `;
+  $("#ledgerEntries").innerHTML = entries.length
+    ? entries.map((item) => `
+      <article class="mini-plan ledger-entry">
+        <div>
+          <strong>${item.type === "income" ? "+" : "-"}${moneyText(item.amount)}</strong>
+          <button type="button" data-delete-ledger="${item.id}">删除</button>
+        </div>
+        <p>${item.category} · ${item.date}${item.note ? ` · ${item.note}` : ""}</p>
+      </article>
+    `).join("")
+    : `<p class="meta-line">本账期还没有账目。</p>`;
+  $$("[data-delete-ledger]").forEach((button) => {
+    button.addEventListener("click", () => deleteLedgerEntry(button.dataset.deleteLedger));
+  });
+  $("#openBalanceModal").addEventListener("click", openBalanceModal);
+  drawExpenseChart();
+}
+
+function saveLedgerSettings() {
+  const store = readStore();
+  store.ledger.close_day = Math.max(1, Math.min(31, Number($("#ledgerCloseDay").value) || 1));
+  writeStore(store);
+  setupLedger();
+  showLedgerStatus("月结日已保存");
+}
+
+function saveLedgerBalance() {
+  const store = readStore();
+  const period = ledgerPeriod();
+  store.ledger.balances[period.key] = $("#ledgerBalance").value;
+  writeStore(store);
+  closeBalanceModal();
+  renderLedger();
+  showLedgerStatus("余额已保存");
+}
+
+function addLedgerCategory() {
+  const category = $("#ledgerCustomCategory").value.trim();
+  if (!category) return;
+  const store = readStore();
+  store.ledger.categories = [...new Set([...(store.ledger.categories || []), category])];
+  writeStore(store);
+  $("#ledgerCustomCategory").value = "";
+  renderLedgerCategoryOptions();
+  $("#ledgerCategory").value = category;
+  showLedgerStatus("分类已添加");
+}
+
+function saveLedgerEntry() {
+  const amount = Number($("#ledgerAmount").value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    showLedgerStatus("请填写有效金额");
+    return;
+  }
+  const store = readStore();
+  const dateValue = $("#ledgerEntryDate").value || todayIso();
+  store.ledger.transactions.push({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    date: dateValue,
+    type: $("#ledgerType").value,
+    category: $("#ledgerCategory").value,
+    amount: amount.toFixed(2),
+    note: $("#ledgerNote").value.trim(),
+    created_at: nowText(),
+  });
+  writeStore(store);
+  $("#ledgerDate").value = dateValue;
+  $("#ledgerAmount").value = "";
+  $("#ledgerNote").value = "";
+  renderLedger();
+  drawExpenseChart();
+  showLedgerStatus("账目已保存");
+}
+
+function deleteLedgerEntry(id) {
+  const store = readStore();
+  store.ledger.transactions = (store.ledger.transactions || []).filter((item) => item.id !== id);
+  writeStore(store);
+  renderLedger();
+  drawExpenseChart();
+}
+
+function showLedgerStatus(message) {
+  $("#ledgerState").textContent = message;
+  setTimeout(() => { $("#ledgerState").textContent = ""; }, 1600);
+}
+
+function openBalanceModal() {
+  $("#balanceModal").hidden = false;
+  $("#ledgerBalance").focus();
+}
+
+function closeBalanceModal() {
+  $("#balanceModal").hidden = true;
+}
+
+function activeExpenseTab() {
+  return $("[data-expense-tab].active")?.dataset.expenseTab || "category";
+}
+
+function monthRange(month) {
+  const [year, monthIndex] = month.split("-").map(Number);
+  const start = `${month}-01`;
+  const end = `${month}-${String(new Date(year, monthIndex, 0).getDate()).padStart(2, "0")}`;
+  return { start, end };
+}
+
+function shiftMonth(month, offset) {
+  const [year, monthIndex] = month.split("-").map(Number);
+  const date = new Date(year, monthIndex - 1 + offset, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function expensesForRange(start, end) {
+  const store = readStore();
+  return (store.ledger.transactions || [])
+    .filter((item) => item.type === "expense" && item.date >= start && item.date <= end)
+    .map((item) => ({ ...item, amount: Number(item.amount || 0) }))
+    .filter((item) => Number.isFinite(item.amount));
+}
+
+function expenseChartData() {
+  const month = $("#chartMonth").value || monthIso();
+  if (activeExpenseTab() === "months") {
+    return Array.from({ length: 6 }, (_, index) => shiftMonth(month, index - 5)).map((monthValue) => {
+      const range = monthRange(monthValue);
+      const total = expensesForRange(range.start, range.end).reduce((sum, item) => sum + item.amount, 0);
+      return { label: monthValue.slice(5), value: total };
+    });
+  }
+  const range = monthRange(month);
+  const totals = {};
+  expensesForRange(range.start, range.end).forEach((item) => {
+    totals[item.category] = (totals[item.category] || 0) + item.amount;
+  });
+  return Object.entries(totals)
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
+}
+
+function drawExpenseChart() {
+  const canvas = $("#expenseChart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const data = expenseChartData();
+  const w = canvas.width;
+  const h = canvas.height;
+  const pad = { left: 52, right: 18, top: 28, bottom: 72 };
+  const innerW = w - pad.left - pad.right;
+  const innerH = h - pad.top - pad.bottom;
+  const max = Math.max(10, ...data.map((item) => item.value));
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = "#dbe3ef";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i <= 4; i += 1) {
+    const y = pad.top + (i / 4) * innerH;
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(w - pad.right, y);
+  }
+  ctx.stroke();
+
+  if (!data.length || data.every((item) => item.value <= 0)) {
+    ctx.fillStyle = "#647087";
+    ctx.font = "22px Segoe UI, sans-serif";
+    ctx.fillText("暂无花销数据", pad.left + 170, pad.top + innerH / 2);
+    return;
+  }
+
+  const gap = 12;
+  const barW = Math.max(26, (innerW - gap * (data.length - 1)) / data.length);
+  data.forEach((item, index) => {
+    const x = pad.left + index * (barW + gap);
+    const barH = (item.value / max) * innerH;
+    const y = pad.top + innerH - barH;
+    ctx.fillStyle = "#d18b00";
+    ctx.fillRect(x, y, barW, barH);
+    ctx.fillStyle = "#31405b";
+    ctx.font = "18px Segoe UI, sans-serif";
+    ctx.fillText(item.label.slice(0, 6), x, h - 34);
+    ctx.fillStyle = "#647087";
+    ctx.font = "16px Segoe UI, sans-serif";
+    ctx.fillText(String(Math.round(item.value)), x, y - 8);
+  });
+  ctx.fillStyle = "#647087";
+  ctx.font = "18px Segoe UI, sans-serif";
+  ctx.fillText(moneyText(max), 4, pad.top + 8);
+  ctx.fillText("0", 28, pad.top + innerH);
 }
 
 function normalizeImportedPlan(rawPlan) {
@@ -1034,12 +1322,15 @@ function importBackup(file) {
 
 function switchView(target) {
   $$(".app-view").forEach((view) => view.classList.toggle("active", view.dataset.view === target));
-  $$(".bottom-nav button").forEach((button) => button.classList.toggle("active", button.dataset.target === target));
+  const navTarget = target === "plan" ? "today" : target;
+  $$(".bottom-nav button").forEach((button) => button.classList.toggle("active", button.dataset.target === navTarget));
   if (target === "trend") requestAnimationFrame(() => {
     renderDayMoodOptions();
     drawTrendChart();
     drawDayMoodChart();
+    drawExpenseChart();
   });
+  if (target === "ledger") requestAnimationFrame(renderLedger);
 }
 
 function switchPlanTab(target) {
@@ -1069,6 +1360,7 @@ function init() {
   $("#moodEntryDate").value = todayIso();
   $("#moodTime").value = nowTimeValue();
   $("#chartMonth").value = monthIso();
+  setupLedger();
   tickSystemTime();
   setInterval(tickSystemTime, 30000);
   loadDate($("#entryDate").value);
@@ -1088,10 +1380,33 @@ function init() {
   });
   $("#addCustomTask").addEventListener("click", addCustomTask);
   $("#addErrand").addEventListener("click", addErrand);
+  $$("[data-open-plan-detail]").forEach((button) => {
+    button.addEventListener("click", () => switchView("plan"));
+  });
+  $("#ledgerDate").addEventListener("change", renderLedger);
+  $("#ledgerEntryDate").addEventListener("change", (event) => {
+    $("#ledgerDate").value = event.target.value || todayIso();
+    renderLedger();
+  });
+  $("#saveLedgerSettings").addEventListener("click", saveLedgerSettings);
+  $("#saveLedgerBalance").addEventListener("click", saveLedgerBalance);
+  $("#closeBalanceModal").addEventListener("click", closeBalanceModal);
+  $("#balanceModal").addEventListener("click", (event) => {
+    if (event.target.id === "balanceModal") closeBalanceModal();
+  });
+  $("#addLedgerCategory").addEventListener("click", addLedgerCategory);
+  $("#saveLedgerEntry").addEventListener("click", saveLedgerEntry);
+  $$("[data-expense-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      $$("[data-expense-tab]").forEach((item) => item.classList.toggle("active", item === button));
+      drawExpenseChart();
+    });
+  });
   $("#chartMonth").addEventListener("change", () => {
     drawTrendChart();
     renderDayMoodOptions();
     drawDayMoodChart();
+    drawExpenseChart();
   });
   ["showCompletion", "showMood", "showWeight", "showExercise", "showCycle", "showBinge"].forEach((id) => {
     $(`#${id}`).addEventListener("change", drawTrendChart);

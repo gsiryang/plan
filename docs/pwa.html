@@ -10,8 +10,8 @@
   <title>今日计划 PWA</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="styles.css?v=14">
-  <script defer src="pwa.js?v=14"></script>
+  <link rel="stylesheet" href="styles.css?v=17">
+  <script defer src="pwa.js?v=17"></script>
 </head>
 <body class="mobile-page pwa-page">
   <main class="phone-shell app-shell">
@@ -48,7 +48,10 @@
             <p id="saveState" class="save-state"></p>
           </form>
 
-          <div class="section-title compact"><h2>今日计划参考</h2></div>
+          <div class="section-title compact">
+            <h2>今日计划参考</h2>
+            <button class="small-action" type="button" data-open-plan-detail>详细半年目标</button>
+          </div>
           <div id="todayPlan" class="suggestions"></div>
         </div>
 
@@ -109,6 +112,47 @@
           </div>
           <div id="customTasks" class="plan-stack"></div>
         </div>
+      </section>
+    </section>
+
+    <section class="app-view" data-view="ledger">
+      <section class="mobile-card">
+        <div class="section-title compact"><h2>新增账目</h2></div>
+        <div class="two-col">
+          <label>日期<input id="ledgerEntryDate" type="date"></label>
+          <label>金额<input id="ledgerAmount" type="number" inputmode="decimal" step="0.01" placeholder="0.00"></label>
+        </div>
+        <div class="two-col">
+          <label>类型
+            <select id="ledgerType">
+              <option value="expense">支出</option>
+              <option value="income">收入</option>
+            </select>
+          </label>
+          <label>分类<select id="ledgerCategory"></select></label>
+        </div>
+        <div class="add-task-row">
+          <input id="ledgerCustomCategory" placeholder="新增自定义分类">
+          <button id="addLedgerCategory" type="button">添加</button>
+        </div>
+        <label>备注<input id="ledgerNote" placeholder="可选"></label>
+        <button id="saveLedgerEntry" type="button">保存账目</button>
+        <p id="ledgerState" class="save-state"></p>
+      </section>
+
+      <section class="mobile-card compact-card">
+        <div class="compact-settings">
+          <label>月结日<input id="ledgerCloseDay" type="number" inputmode="numeric" min="1" max="31" placeholder="1"></label>
+          <label>查看日期<input id="ledgerDate" type="date"></label>
+          <button id="saveLedgerSettings" type="button">保存</button>
+        </div>
+        <p id="ledgerPeriod" class="meta-line"></p>
+      </section>
+
+      <section class="mobile-card">
+        <div class="section-title compact"><h2>本账期汇总</h2></div>
+        <div id="ledgerSummary" class="summary-grid"></div>
+        <div id="ledgerEntries" class="plan-stack"></div>
       </section>
     </section>
 
@@ -178,6 +222,14 @@
         </div>
       </section>
       <section class="mobile-card">
+        <div class="section-title compact"><h2>花销统计</h2></div>
+        <div class="sub-tabs" aria-label="花销统计">
+          <button type="button" class="active" data-expense-tab="category">当月分类</button>
+          <button type="button" data-expense-tab="months">多月总额</button>
+        </div>
+        <div class="chart-wrap"><canvas id="expenseChart" width="720" height="360"></canvas></div>
+      </section>
+      <section class="mobile-card">
         <div class="section-title compact"><h2>备份</h2></div>
         <div class="section-title compact"><h2>日内心情曲线</h2></div>
         <div id="dayMoodDays" class="mood-day-list"></div>
@@ -192,15 +244,27 @@
 
       <section class="mobile-card install-note">
         <h2>添加到主屏幕</h2>
-        <p>在 iPhone Safari 打开 HTTPS 地址后，点分享按钮，选择“添加到主屏幕”。iOS 16.6.1 支持这种方式。</p>
+      <p>在 iPhone Safari 打开 HTTPS 地址后，点分享按钮，选择“添加到主屏幕”。iOS 16.6.1 支持这种方式。</p>
       </section>
     </section>
   </main>
 
+  <div id="balanceModal" class="modal-backdrop" hidden>
+    <section class="modal-panel">
+      <div class="section-title compact"><h2>手动余额</h2></div>
+      <label>本账期实际余额<input id="ledgerBalance" type="number" inputmode="decimal" step="0.01" placeholder="手动更新，不自动计算"></label>
+      <p class="meta-line">余额独立保存，不会被收入/支出自动覆盖。</p>
+      <div class="modal-actions">
+        <button id="saveLedgerBalance" type="button">保存</button>
+        <button id="closeBalanceModal" type="button">取消</button>
+      </div>
+    </section>
+  </div>
+
   <nav class="bottom-nav" aria-label="底部导航">
     <button type="button" class="active" data-target="today">今日</button>
     <button type="button" data-target="mood">心情</button>
-    <button type="button" data-target="plan">计划</button>
+    <button type="button" data-target="ledger">记账</button>
     <button type="button" data-target="health">健康</button>
     <button type="button" data-target="trend">趋势/备份</button>
   </nav>
